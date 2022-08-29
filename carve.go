@@ -43,6 +43,10 @@ func Carve(f io.ReaderAt, fn CarveMatchFunc) error {
 			off++
 
 			if c != x {
+				if c == s1[0] {
+					off--
+					r.UnreadByte()
+				}
 				nm = true
 				break
 			}
