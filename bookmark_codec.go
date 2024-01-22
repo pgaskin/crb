@@ -4,8 +4,8 @@
 // 106, 2022-08-22). Should work at least as far back as 2014 (Chrome 40).
 //
 // See:
-//  - https://source.chromium.org/chromium/chromium/src/+/main:components/bookmarks/browser/bookmark_codec.cc;drc=aabc28688acc0ba19b42ac3795febddc11a43ede
-//  - https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/bookmarks/bookmark_html_writer.cc;drc=aabc28688acc0ba19b42ac3795febddc11a43ede
+//   - https://source.chromium.org/chromium/chromium/src/+/main:components/bookmarks/browser/bookmark_codec.cc;drc=aabc28688acc0ba19b42ac3795febddc11a43ede
+//   - https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/bookmarks/bookmark_html_writer.cc;drc=aabc28688acc0ba19b42ac3795febddc11a43ede
 package crb
 
 import (
@@ -42,6 +42,8 @@ type BookmarkNode struct {
 	GUID             GUID              `json:"guid"`
 	ID               int               `json:"id,string"`
 	Name             string            `json:"name"`
+	ShowIcon         bool              `json:"show_icon,omitempty"`
+	Source           string            `json:"source,omitempty"`
 	Type             NodeType          `json:"type"`
 	URL              string            `json:"url,omitempty"`
 	MetaInfo         map[string]string `json:"meta_info,omitempty"`
@@ -54,7 +56,7 @@ func Decode(r io.Reader) (*Bookmarks, bool, error) {
 	d := json.NewDecoder(r)
 	d.DisallowUnknownFields()
 	if err := d.Decode(&b); err != nil {
-		return nil, false, nil
+		return nil, false, err
 	}
 	return &b, b.Checksum == b.CalculateChecksum(), nil
 }
