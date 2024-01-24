@@ -4,8 +4,8 @@
 // 106, 2022-08-22). Should work at least as far back as 2014 (Chrome 40).
 //
 // See:
-//  - https://source.chromium.org/chromium/chromium/src/+/main:components/bookmarks/browser/bookmark_codec.cc;drc=aabc28688acc0ba19b42ac3795febddc11a43ede
-//  - https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/bookmarks/bookmark_html_writer.cc;drc=aabc28688acc0ba19b42ac3795febddc11a43ede
+//   - https://source.chromium.org/chromium/chromium/src/+/main:components/bookmarks/browser/bookmark_codec.cc;drc=aabc28688acc0ba19b42ac3795febddc11a43ede
+//   - https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/bookmarks/bookmark_html_writer.cc;drc=aabc28688acc0ba19b42ac3795febddc11a43ede
 package crb
 
 import (
@@ -42,6 +42,8 @@ type BookmarkNode struct {
 	GUID             GUID              `json:"guid"`
 	ID               int               `json:"id,string"`
 	Name             string            `json:"name"`
+	ShowIcon         bool              `json:"show_icon,omitempty"` // used by MSEdge
+	Source           Source            `json:"source,omitempty"`    // used by MSEdge
 	Type             NodeType          `json:"type"`
 	URL              string            `json:"url,omitempty"`
 	MetaInfo         map[string]string `json:"meta_info,omitempty"`
@@ -54,7 +56,7 @@ func Decode(r io.Reader) (*Bookmarks, bool, error) {
 	d := json.NewDecoder(r)
 	d.DisallowUnknownFields()
 	if err := d.Decode(&b); err != nil {
-		return nil, false, nil
+		return nil, false, err
 	}
 	return &b, b.Checksum == b.CalculateChecksum(), nil
 }
@@ -211,6 +213,45 @@ func (t *NodeType) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	if err := t.Valid(); err != nil {
+		return err
+	}
+	return nil
+}
+
+type Source string
+
+var (
+	_ json.Marshaler   = Source("")
+	_ json.Unmarshaler = (*Source)(nil)
+)
+
+const (
+	SourceUserAdd   Source = "user_add"
+	SourceImportFre Source = "import_fre"
+	SourceUnknown   Source = "unknown"
+)
+
+func (s Source) Valid() error {
+	switch s {
+	case SourceUserAdd, SourceImportFre, SourceUnknown:
+		return nil
+	default:
+		return fmt.Errorf("unrecognized source %q", string(s))
+	}
+}
+
+func (s Source) MarshalJSON() ([]byte, error) {
+	if err := s.Valid(); err != nil {
+		return nil, err
+	}
+	return json.Marshal(string(s))
+}
+
+func (s *Source) UnmarshalJSON(b []byte) error {
+	if err := json.Unmarshal(b, (*string)(s)); err != nil {
+		return err
+	}
+	if err := s.Valid(); err != nil {
 		return err
 	}
 	return nil
