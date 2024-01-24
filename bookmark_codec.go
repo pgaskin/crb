@@ -42,8 +42,8 @@ type BookmarkNode struct {
 	GUID             GUID              `json:"guid"`
 	ID               int               `json:"id,string"`
 	Name             string            `json:"name"`
-	ShowIcon         bool              `json:"show_icon,omitempty"`
-	Source           string            `json:"source,omitempty"`
+	ShowIcon         bool              `json:"show_icon,omitempty"` // used by MSEdge
+	Source           Source            `json:"source,omitempty"`    // used by MSEdge
 	Type             NodeType          `json:"type"`
 	URL              string            `json:"url,omitempty"`
 	MetaInfo         map[string]string `json:"meta_info,omitempty"`
@@ -213,6 +213,45 @@ func (t *NodeType) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	if err := t.Valid(); err != nil {
+		return err
+	}
+	return nil
+}
+
+type Source string
+
+var (
+	_ json.Marshaler   = Source("")
+	_ json.Unmarshaler = (*Source)(nil)
+)
+
+const (
+	SourceUserAdd   Source = "user_add"
+	SourceImportFre Source = "import_fre"
+	SourceUnknown   Source = "unknown"
+)
+
+func (s Source) Valid() error {
+	switch s {
+	case SourceUserAdd, SourceImportFre, SourceUnknown:
+		return nil
+	default:
+		return fmt.Errorf("unrecognized source %q", string(s))
+	}
+}
+
+func (s Source) MarshalJSON() ([]byte, error) {
+	if err := s.Valid(); err != nil {
+		return nil, err
+	}
+	return json.Marshal(string(s))
+}
+
+func (s *Source) UnmarshalJSON(b []byte) error {
+	if err := json.Unmarshal(b, (*string)(s)); err != nil {
+		return err
+	}
+	if err := s.Valid(); err != nil {
 		return err
 	}
 	return nil
